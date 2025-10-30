@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import IconPaperPlane from "@/components/ui/IconPaperPlane";
 import { Conversation, ConversationContent, ConversationEmptyState } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageAvatar } from "@/components/ai-elements/message";
+import { Tool, ToolHeader, ToolContent, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
+import { Response } from "@/components/ai-elements/response";
 import { PromptInput, PromptInputProvider, PromptInputBody, PromptInputFooter, PromptInputTextarea, PromptInputSubmit, PromptInputSpeechButton } from "@/components/ai-elements/prompt-input";
 import IconUser from "@/components/ui/IconUser";
 import IconFeather from "@/components/ui/IconFeather";
@@ -43,9 +45,27 @@ export default function AiChatLauncher() {
                           .map((p: any) => p.text)
                           .join(" ")
                       : m.content ?? "";
+                    const toolParts = Array.isArray(m.parts)
+                      ? m.parts.filter((p: any) => typeof p?.type === "string" && p.type.startsWith("tool-"))
+                      : [];
                     return (
                       <Message key={m.id} from={m.role}>
-                        <MessageContent>{text}</MessageContent>
+                        <MessageContent>
+                          {m.role === "assistant" ? (
+                            <Response>{text}</Response>
+                          ) : (
+                            text
+                          )}
+                          {toolParts.map((t: any, idx: number) => (
+                            <Tool key={`${m.id}-tool-${idx}`} defaultOpen={t.state !== "output-available"}>
+                              <ToolHeader title={t.toolName} type={t.type} state={t.state} />
+                              <ToolContent>
+                                {t.input ? <ToolInput input={t.input} /> : null}
+                                <ToolOutput output={t.output} errorText={t.errorText} />
+                              </ToolContent>
+                            </Tool>
+                          ))}
+                        </MessageContent>
                         <MessageAvatar icon={m.role === "user" ? <IconUser className="size-4" /> : <IconFeather className="size-4" />} name={m.role === "user" ? "You" : "Assistant"} />
                       </Message>
                     );
