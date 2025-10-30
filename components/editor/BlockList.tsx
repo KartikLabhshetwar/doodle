@@ -40,13 +40,16 @@ export default function BlockList(props: Props) {
   const [slashPos, setSlashPos] = React.useState<{ left: number; top: number } | null>(null)
   const inputsRef = React.useRef<Record<number, HTMLInputElement | null>>({})
   const [menuFor, setMenuFor] = React.useState<number | null>(null)
+  const [menuPos, setMenuPos] = React.useState<{ left: number; top: number } | null>(null)
+  const [dragIndex, setDragIndex] = React.useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
 
   React.useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       // Close menu if clicking outside any menu
       const target = e.target as HTMLElement | null
       if (!target) return
-      if (!target.closest('[data-block-menu]')) setMenuFor(null)
+      if (!target.closest('[data-block-menu]') && !target.closest('[data-block-menu-trigger]')) { setMenuFor(null); setMenuPos(null) }
       if (!target.closest('[data-slash-menu]')) { setSlashFor(null); setSlashPos(null) }
     }
     document.addEventListener('click', onDocClick)
@@ -108,10 +111,17 @@ export default function BlockList(props: Props) {
               props.onInsertAfter(i, nextBlock)
               focusAt(i + 1)
             } else if (e.key === 'Backspace' && (e.currentTarget.selectionStart ?? 0) === 0 && (e.currentTarget.selectionEnd ?? 0) === 0) {
-              e.preventDefault()
-              if (props.blocks.length > 1) {
-                props.onDelete(i)
-                focusAt(Math.max(0, i - 1))
+              const current = props.blocks[i]
+              if (current && (current.type === 'bullet' || current.type === 'numbered' || current.type === 'todo')) {
+                e.preventDefault()
+                props.onChangeType(i, 'paragraph')
+                focusAt(i)
+              } else {
+                e.preventDefault()
+                if (props.blocks.length > 1) {
+                  props.onDelete(i)
+                  focusAt(Math.max(0, i - 1))
+                }
               }
             } else if (e.key === '/') {
               e.preventDefault()
@@ -129,40 +139,69 @@ export default function BlockList(props: Props) {
         }
 
         return (
-          <div key={i} className="group flex items-center gap-2 px-2 py-1.5 relative">
-            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-              <button type="button" className="text-xs px-1" onClick={() => props.onMove(i, -1)} aria-label="Move up">↑</button>
-              <button type="button" className="text-xs px-1" onClick={() => props.onMove(i, 1)} aria-label="Move down">↓</button>
+          <div
+            key={i}
+            className={`group flex items-center gap-2 px-2 py-1.5 relative ${dragOverIndex === i ? 'bg-accent/40' : ''}`}
+            draggable
+            onDragStart={(e) => { setDragIndex(i); e.dataTransfer.setData('text/plain', String(i)) }}
+            onDragOver={(e) => { e.preventDefault(); if (dragOverIndex !== i) setDragOverIndex(i) }}
+            onDrop={(e) => {
+              e.preventDefault()
+              const from = dragIndex
+              const to = i
+              setDragOverIndex(null)
+              setDragIndex(null)
+              if (from == null || to == null || from === to) return
+              const dir = from < to ? 1 : -1
+              const times = Math.abs(to - from)
+              for (let t = 0; t < times; t++) props.onMove(from + t * dir, dir)
+            }}
+          >
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
               <button type="button" className="text-xs px-1" onClick={() => props.onInsertAfter(i)} aria-label="Add">＋</button>
               <button
                 type="button"
-                className="text-xs px-1"
+                className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-accent/60 bg-accent/30"
                 aria-label="More"
-                onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === i ? null : i) }}
+                draggable={false}
+                data-block-menu-trigger
+                onDragStart={(e) => { e.preventDefault() }}
+                onMouseDown={(e) => { e.stopPropagation() }}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
+                  setMenuPos({ left: rect.left + rect.width + 6, top: rect.top + rect.height + 4 })
+                  setMenuFor(menuFor === i ? null : i)
+                }}
               >
-                ⋯
+                <span className="grid grid-cols-3 gap-[2px]">
+                  <span className="w-1 h-1 bg-current rounded-full" />
+                  <span className="w-1 h-1 bg-current rounded-full" />
+                  <span className="w-1 h-1 bg-current rounded-full" />
+                  <span className="w-1 h-1 bg-current rounded-full" />
+                  <span className="w-1 h-1 bg-current rounded-full" />
+                  <span className="w-1 h-1 bg-current rounded-full" />
+                </span>
               </button>
-              {menuFor === i ? (
+              {menuFor === i && menuPos ? (
                 <div
                   data-block-menu
-                  className="absolute left-10 top-6 z-10 rounded-md border border-border bg-background shadow"
-                  onClick={(e) => e.stopPropagation()}
+                  className="z-50 rounded-md border border-border bg-background shadow"
+                  style={{ position: 'fixed', left: menuPos.left, top: menuPos.top }}
+                  onMouseDown={(e) => e.stopPropagation()}
                 >
                   <button
                     type="button"
                     className="block w-full text-left px-3 py-2 text-sm hover:bg-accent"
-                    onClick={() => {
-                      const b = props.blocks[i]
-                      if (b) props.onInsertAfter(i, { ...b } as BlockType)
-                      setMenuFor(null)
-                    }}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); const b = props.blocks[i]; if (b) props.onInsertAfter(i, { ...b } as BlockType); setMenuFor(null); setMenuPos(null) }}
                   >
                     Duplicate
                   </button>
                   <button
                     type="button"
                     className="block w-full text-left px-3 py-2 text-sm hover:bg-accent"
-                    onClick={() => { props.onDelete(i); setMenuFor(null) }}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); props.onDelete(i); setMenuFor(null); setMenuPos(null) }}
                   >
                     Delete
                   </button>
