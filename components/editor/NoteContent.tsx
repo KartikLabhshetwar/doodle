@@ -2,11 +2,11 @@
 
 import * as React from 'react'
 import NoteEditor from './NoteEditor'
-import { TipTapDocType } from '@/lib/validation'
+import { MarkdownDocType } from '@/lib/validation'
 
 type Props = {
   noteId: string
-  initialContent: TipTapDocType
+  initialContent: MarkdownDocType
 }
 
 export default function NoteContent({ noteId, initialContent }: Props) {

@@ -16,7 +16,7 @@ export async function createNote() {
   const created = await prisma.note.create({
     data: {
       title: "Untitled",
-      contentJson: { type: "doc", content: [] } as any,
+      contentJson: { type: "markdown", content: "" } as any,
       ownerId: userId,
     },
     select: { id: true },

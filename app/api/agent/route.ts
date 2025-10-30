@@ -5,12 +5,12 @@ import { groq, createGroq } from "@ai-sdk/groq";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { getUserIdFromRequest, requireUser } from "@/lib/auth";
-import { TipTapDocType } from "@/lib/validation";
+import { MarkdownDocType } from "@/lib/validation";
 
-function appendParagraph(doc: TipTapDocType, text: string): TipTapDocType {
-  const newNode = { type: "paragraph", content: [{ type: "text", text }] } as any;
-  const content = Array.isArray(doc.content) ? [...doc.content, newNode] : [newNode];
-  return { type: "doc", content } as TipTapDocType;
+function appendParagraph(doc: MarkdownDocType, text: string): MarkdownDocType {
+  const existing = typeof doc.content === "string" ? doc.content : "";
+  const next = existing ? `${existing}\n\n${text}` : text;
+  return { type: "markdown", content: next } as MarkdownDocType;
 }
 
 export const maxDuration = 30;
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         inputSchema: z.object({ title: z.string().optional() }),
         execute: async ({ title }) => {
           const created = await prisma.note.create({
-            data: { ownerId: userId!, title: title ?? "Untitled", contentJson: { type: "doc", content: [] } },
+            data: { ownerId: userId!, title: title ?? "Untitled", contentJson: { type: "markdown", content: "" } },
             select: { id: true },
           });
           revalidatePath("/home");

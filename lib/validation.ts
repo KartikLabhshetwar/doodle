@@ -1,36 +1,21 @@
 import { z } from "zod";
 
-// Simplified TipTap JSON schema: allow known nodes and unknown props while ensuring array/object shapes
-export const TipTapNode = z.object({
-  type: z.string(),
-  attrs: z.record(z.any()).optional(),
-  text: z.string().optional(),
-  marks: z
-    .array(
-      z.object({
-        type: z.string(),
-        attrs: z.record(z.any()).optional(),
-      })
-    )
-    .optional(),
-  content: z.lazy(() => z.array(TipTapNode)).optional(),
-});
-
-export const TipTapDoc = z.object({
-  type: z.literal("doc"),
-  content: z.array(TipTapNode).default([]),
+// Markdown-based content schema replacing TipTap
+export const MarkdownDoc = z.object({
+  type: z.literal("markdown"),
+  content: z.string().default(""),
 });
 
 export const IdParamSchema = z.object({ id: z.string().min(1) });
 
 export const NoteCreateSchema = z.object({
   title: z.string().optional(),
-  contentJson: TipTapDoc,
+  contentJson: MarkdownDoc,
 });
 
 export const NoteUpdateSchema = z.object({
   title: z.string().optional(),
-  contentJson: TipTapDoc.optional(),
+  contentJson: MarkdownDoc.optional(),
 });
 
 export const TodoCreateSchema = z.object({
@@ -43,5 +28,5 @@ export const TodoUpdateSchema = z.object({
   completed: z.boolean().optional(),
 });
 
-export type TipTapDocType = z.infer<typeof TipTapDoc>;
+export type MarkdownDocType = z.infer<typeof MarkdownDoc>;
 

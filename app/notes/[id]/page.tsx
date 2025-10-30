@@ -1,7 +1,7 @@
 import NoteContent from "@/components/editor/NoteContent";
 import NoteTitle from "@/components/editor/NoteTitle";
 import { prisma } from "@/lib/db";
-import { TipTapDocType } from "@/lib/validation";
+import { MarkdownDocType } from "@/lib/validation";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -20,7 +20,7 @@ export default async function NotePage({ params }: Props) {
       <div className="mb-4">
         <NoteTitle noteId={note.id} initialTitle={note.title} />
       </div>
-      <NoteContent noteId={note.id} initialContent={note.contentJson as unknown as TipTapDocType} />
+      <NoteContent noteId={note.id} initialContent={note.contentJson as unknown as MarkdownDocType} />
     </main>
   );
 }
