@@ -3,8 +3,13 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import type { ComponentProps, ReactNode } from "react";
 
-export default function CreateNoteClient() {
+type Props = {
+  children?: ReactNode;
+} & ComponentProps<typeof Button>;
+
+export default function CreateNoteClient({ children, ...buttonProps }: Props) {
   const router = useRouter();
   const [isCreating, setIsCreating] = React.useState(false);
 
@@ -28,8 +33,8 @@ export default function CreateNoteClient() {
   };
 
   return (
-    <Button onClick={onCreate} disabled={isCreating}>
-      {isCreating ? "Creating…" : "New note"}
+    <Button onClick={onCreate} disabled={isCreating} {...buttonProps}>
+      {isCreating ? "Creating…" : children ?? "New note"}
     </Button>
   );
 }

@@ -12,7 +12,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import CreateNoteClient from "@/app/notes/_create-note-client";
 import NoteActionsBar from "@/components/editor/NoteActionsBar";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -29,21 +29,14 @@ export default async function NotesLayout({ children }: { children: React.ReactN
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/notes">Notes</Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/">Home</Link>
+                <Link href="/home">Home</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
           <div className="px-2 pb-2">
-            <Button asChild className="w-full">
-              <Link href="/notes">New note</Link>
-            </Button>
+            <CreateNoteClient />
           </div>
         </SidebarFooter>
       </Sidebar>
