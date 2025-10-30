@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       where: { id, ownerId: userId },
     });
     if (!note) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ note });
+    return NextResponse.json({ note: { ...note, updatedAt: note.updatedAt.toISOString() } });
   } catch (err: any) {
     const status = err?.status ?? 500;
     return NextResponse.json({ error: err?.message ?? "Internal Error" }, { status });

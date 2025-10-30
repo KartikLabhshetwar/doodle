@@ -23,23 +23,30 @@ type Props = {
   updatedAt: string | Date
 }
 
-function formatUpdatedAt(dateLike: string | Date) {
-  const d = new Date(dateLike)
-  // Deterministic across server/client: fixed locale + UTC timezone
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    timeZone: "UTC",
-  }).format(d)
+function getIso(dateLike: string | Date) {
+  return new Date(dateLike).toISOString()
 }
 
 export default function NoteCard({ id, title, updatedAt }: Props) {
   const [open, setOpen] = React.useState(false)
+  const iso = React.useMemo(() => getIso(updatedAt), [updatedAt])
+  const [localeTime, setLocaleTime] = React.useState<string>(iso)
+
+  React.useEffect(() => {
+    const date = new Date(iso)
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const formatted = new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: tz,
+    }).format(date)
+    setLocaleTime(formatted)
+  }, [iso])
 
   return (
     <div className="group relative rounded-xl border p-4 transition-colors hover:bg-muted/40">
@@ -48,8 +55,8 @@ export default function NoteCard({ id, title, updatedAt }: Props) {
           <IconFiles className="size-4 shrink-0" />
           <span className="truncate">{title || "Untitled"}</span>
         </div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          {formatUpdatedAt(updatedAt)}
+        <div className="mt-1 text-xs text-muted-foreground" suppressHydrationWarning>
+          {localeTime}
         </div>
       </Link>
       <div className="absolute right-2 top-2 opacity-50 transition-opacity group-hover:opacity-100">

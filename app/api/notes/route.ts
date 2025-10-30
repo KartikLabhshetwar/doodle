@@ -8,11 +8,16 @@ export async function GET(req: Request) {
     const userId = await getUserIdFromRequest(req);
     requireUser(userId);
 
-    const notes = await prisma.note.findMany({
+    const rows = await prisma.note.findMany({
       where: { ownerId: userId },
       orderBy: { updatedAt: "desc" },
       select: { id: true, title: true, updatedAt: true },
     });
+    const notes = rows.map((n) => ({
+      id: n.id,
+      title: n.title,
+      updatedAt: n.updatedAt.toISOString(),
+    }))
     return NextResponse.json({ notes });
   } catch (err: any) {
     const status = err?.status ?? 500;
