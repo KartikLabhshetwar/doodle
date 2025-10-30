@@ -6,10 +6,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import IconPaperPlane from "@/components/ui/IconPaperPlane";
 import { Conversation, ConversationContent, ConversationEmptyState } from "@/components/ai-elements/conversation";
-import { PromptInput, PromptInputProvider, PromptInputBody, PromptInputFooter, PromptInputTextarea, PromptInputSubmit } from "@/components/ai-elements/prompt-input";
+import { Message, MessageContent, MessageAvatar } from "@/components/ai-elements/message";
+import { PromptInput, PromptInputProvider, PromptInputBody, PromptInputFooter, PromptInputTextarea, PromptInputSubmit, PromptInputSpeechButton } from "@/components/ai-elements/prompt-input";
+import IconUser from "@/components/ui/IconUser";
+import IconFeather from "@/components/ui/IconFeather";
 
 export default function AiChatLauncher() {
   const { messages, status, sendMessage } = useChat();
+  const getGroqKey = React.useCallback(() => {
+    return typeof window !== "undefined" ? localStorage.getItem("groq_api_key") : null;
+  }, []);
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -29,7 +35,7 @@ export default function AiChatLauncher() {
               {messages.length === 0 ? (
                 <ConversationEmptyState description="Ask anything about your notes or add todos." />
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-1">
                   {messages.map((m: any) => {
                     const text = Array.isArray(m.parts)
                       ? m.parts
@@ -38,9 +44,10 @@ export default function AiChatLauncher() {
                           .join(" ")
                       : m.content ?? "";
                     return (
-                      <div key={m.id} className="text-sm">
-                        <strong>{m.role === "user" ? "You" : "Assistant"}:</strong> {text}
-                      </div>
+                      <Message key={m.id} from={m.role}>
+                        <MessageContent>{text}</MessageContent>
+                        <MessageAvatar icon={m.role === "user" ? <IconUser className="size-4" /> : <IconFeather className="size-4" />} name={m.role === "user" ? "You" : "Assistant"} />
+                      </Message>
                     );
                   })}
                 </div>
@@ -49,13 +56,31 @@ export default function AiChatLauncher() {
           </Conversation>
           <div className="border-t p-3">
             <PromptInputProvider>
-              <PromptInput onSubmit={(msg) => sendMessage({ role: "user", parts: [{ type: "text", text: msg.text ?? "" }] })}>
+              <PromptInput onSubmit={(msg) => {
+                const key = getGroqKey();
+                return sendMessage(
+                  { role: "user", parts: [{ type: "text", text: msg.text ?? "" }] },
+                  key ? { headers: { "x-groq-api-key": key } } : undefined
+                );
+              }}>
                 <PromptInputBody>
                   <PromptInputTextarea placeholder="Ask to add a todo, append thoughts, etc." />
                 </PromptInputBody>
                 <PromptInputFooter>
                   <div />
-                  <PromptInputSubmit disabled={status === "streaming" || status === "submitted"} status={status} />
+                  <div className="flex items-center gap-1">
+                    <PromptInputSpeechButton
+                      aria-label="Start voice input"
+                      onTranscriptionChange={(text) => {
+                        const el = typeof window !== "undefined" ? (document.querySelector('textarea[name="message"]') as HTMLTextAreaElement | null) : null;
+                        if (el) {
+                          el.value = text;
+                          el.dispatchEvent(new Event("input", { bubbles: true }));
+                        }
+                      }}
+                    />
+                    <PromptInputSubmit disabled={status === "streaming" || status === "submitted"} status={status} />
+                  </div>
                 </PromptInputFooter>
               </PromptInput>
             </PromptInputProvider>

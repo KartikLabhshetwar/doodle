@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
     // @ts-expect-error types may vary by model
     const audio = await client.audio.speech.create({
-      model: process.env.GROQ_MODEL_TTS || "speecht5",
+      model: process.env.GROQ_MODEL_TTS || "whisper-large-v3",
       voice: parsed.data.voice || "alloy",
       input: parsed.data.text,
       format: "mp3",

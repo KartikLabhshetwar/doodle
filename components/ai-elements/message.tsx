@@ -30,11 +30,11 @@ const messageContentVariants = cva(
       variant: {
         contained: [
           "max-w-[80%] px-4 py-3",
-          "group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground",
+          "group-[.is-user]:bg-muted group-[.is-user]:text-foreground",
           "group-[.is-assistant]:bg-secondary group-[.is-assistant]:text-foreground",
         ],
         flat: [
-          "group-[.is-user]:max-w-[80%] group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
+          "group-[.is-user]:max-w-[80%] group-[.is-user]:bg-muted group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
           "group-[.is-assistant]:text-foreground",
         ],
       },
@@ -63,18 +63,20 @@ export const MessageContent = ({
 );
 
 export type MessageAvatarProps = ComponentProps<typeof Avatar> & {
-  src: string;
+  src?: string;
   name?: string;
+  icon?: React.ReactNode;
 };
 
 export const MessageAvatar = ({
   src,
   name,
+  icon,
   className,
   ...props
 }: MessageAvatarProps) => (
   <Avatar className={cn("size-8 ring-1 ring-border", className)} {...props}>
-    <AvatarImage alt="" className="mt-0 mb-0" src={src} />
-    <AvatarFallback>{name?.slice(0, 2) || "ME"}</AvatarFallback>
+    {src ? <AvatarImage alt="" className="mt-0 mb-0" src={src} /> : null}
+    <AvatarFallback>{icon ?? name?.slice(0, 2) ?? "ME"}</AvatarFallback>
   </Avatar>
 );

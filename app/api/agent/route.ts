@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { streamText, convertToModelMessages, tool } from "ai";
-import { groq } from "@ai-sdk/groq";
+import { groq, createGroq } from "@ai-sdk/groq";
 import { prisma } from "@/lib/db";
 import { getUserIdFromRequest, requireUser } from "@/lib/auth";
 import { TipTapDocType } from "@/lib/validation";
@@ -18,9 +18,11 @@ export async function POST(req: Request) {
   const userId = await getUserIdFromRequest(req);
   requireUser(userId);
   const { messages } = await req.json();
+  const headerApiKey = req.headers.get("x-groq-api-key") || undefined;
+  const provider = headerApiKey ? createGroq({ apiKey: headerApiKey }) : groq;
 
   const result = streamText({
-    model: groq(process.env.GROQ_MODEL_TEXT || "openai/gpt-oss-20b"),
+    model: provider(process.env.GROQ_MODEL_TEXT || "openai/gpt-oss-20b"),
     system:
       "You are a helpful notes assistant. Prefer using tools for CRUD on notes and todos. Keep responses concise.",
     messages: convertToModelMessages(messages || []),

@@ -9,7 +9,6 @@ function getIdFromUrl(req: Request) {
   const parsed = IdParamSchema.safeParse({ id });
   if (!parsed.success) {
     const err = new Error("Invalid id");
-    // @ts-expect-error status used by caller
     (err as any).status = 400;
     throw err;
   }
