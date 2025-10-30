@@ -31,11 +31,21 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
     onUpdate: ({ editor }) => {
       onChange?.(editor.getJSON())
     },
+    editorProps: {
+      attributes: {
+        class:
+          'ProseMirror prose prose-neutral max-w-none w-full min-h-64 bg-transparent outline-none focus:outline-none focus:ring-0',
+        spellcheck: 'true',
+      },
+    },
   })
 
   return (
     <div className="prose prose-neutral max-w-none">
-      <EditorContent editor={editor} />
+      <EditorContent
+        editor={editor}
+        className="min-h-64 w-full bg-transparent border-0 outline-none focus:outline-none focus:ring-0 [&_*]:border-0"
+      />
     </div>
   )
 }

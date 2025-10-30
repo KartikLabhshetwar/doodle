@@ -1,22 +1,26 @@
-import NoteEditor from "@/components/editor/NoteEditor";
+import NoteContent from "@/components/editor/NoteContent";
+import NoteTitle from "@/components/editor/NoteTitle";
 import { prisma } from "@/lib/db";
-import { TipTapDoc } from "@/lib/validation";
+import { TipTapDocType } from "@/lib/validation";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
-type Props = { params: { id: string } };
+type Props = { params: Promise<{ id: string }> };
 
 export default async function NotePage({ params }: Props) {
-  const note = await prisma.note.findUnique({ where: { id: params.id } });
+  const { id } = await params;
+  if (!id) return notFound();
+  const note = await prisma.note.findUnique({ where: { id } });
   if (!note) return notFound();
+  const session = await auth.api.getSession({ headers: await headers() });
 
   return (
-    <main className="mx-auto max-w-3xl p-6 bg-white">
-      <input
-        defaultValue={note.title}
-        className="mb-4 w-full border-b border-neutral-200 bg-transparent px-0 py-2 text-xl font-semibold outline-none"
-        placeholder="Untitled"
-      />
-      <NoteEditor initialContent={note.contentJson as unknown as TipTapDoc} />
+    <main className="w-full flex-1 p-6">
+      <div className="mb-4">
+        <NoteTitle noteId={note.id} initialTitle={note.title} />
+      </div>
+      <NoteContent noteId={note.id} initialContent={note.contentJson as unknown as TipTapDocType} />
     </main>
   );
 }
