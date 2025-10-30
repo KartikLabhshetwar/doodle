@@ -11,9 +11,21 @@ import {
   useContext,
 } from "react";
 
+// Local minimal shape for approval information since newer ai SDK ToolUIPart
+// may not expose an "approval" type member directly.
+type Approval = {
+  approved?: boolean;
+} | undefined;
+
+type EnhancedToolState =
+  | ToolUIPart["state"]
+  | "approval-requested"
+  | "approval-responded"
+  | "output-denied";
+
 type ConfirmationContextValue = {
-  approval: ToolUIPart["approval"];
-  state: ToolUIPart["state"];
+  approval: Approval;
+  state: EnhancedToolState;
 };
 
 const ConfirmationContext = createContext<ConfirmationContextValue | null>(
@@ -31,8 +43,8 @@ const useConfirmation = () => {
 };
 
 export type ConfirmationProps = ComponentProps<typeof Alert> & {
-  approval?: ToolUIPart["approval"];
-  state: ToolUIPart["state"];
+  approval?: Approval;
+  state: EnhancedToolState;
 };
 
 export const Confirmation = ({

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { streamText, convertToModelMessages, tool } from "ai";
 import { groq, createGroq } from "@ai-sdk/groq";
 import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 import { getUserIdFromRequest, requireUser } from "@/lib/auth";
 import { TipTapDocType } from "@/lib/validation";
 
@@ -27,6 +28,26 @@ export async function POST(req: Request) {
       "You are a helpful notes assistant. Prefer using tools for CRUD on notes and todos. Keep responses concise.",
     messages: convertToModelMessages(messages || []),
     tools: {
+      list_notes: tool({
+        description: "List notes for the current user. Optionally filter by search query and limit results.",
+        inputSchema: z.object({
+          q: z.string().optional(),
+          limit: z.number().int().positive().optional(),
+        }),
+        execute: async ({ q, limit }) => {
+          const take = Math.min(limit ?? 25, 100);
+          const notes = await prisma.note.findMany({
+            where: {
+              ownerId: userId!,
+              ...(q ? { title: { contains: q, mode: "insensitive" } } : {}),
+            },
+            orderBy: { updatedAt: "desc" },
+            take,
+            select: { id: true, title: true, updatedAt: true },
+          });
+          return notes;
+        },
+      }),
       create_note: tool({
         description: "Create a new note with optional title",
         inputSchema: z.object({ title: z.string().optional() }),
@@ -35,6 +56,7 @@ export async function POST(req: Request) {
             data: { ownerId: userId!, title: title ?? "Untitled", contentJson: { type: "doc", content: [] } },
             select: { id: true },
           });
+          revalidatePath("/home");
           return { id: created.id };
         },
       }),
@@ -46,6 +68,7 @@ export async function POST(req: Request) {
           if (!note) throw new Error("Note not found");
           const updatedDoc = appendParagraph(note.contentJson as any, text);
           await prisma.note.update({ where: { id: noteId }, data: { contentJson: updatedDoc } });
+          revalidatePath("/home");
           return { ok: true };
         },
       }),
@@ -56,6 +79,7 @@ export async function POST(req: Request) {
           const note = await prisma.note.findFirst({ where: { id: noteId, ownerId: userId! }, select: { id: true } });
           if (!note) throw new Error("Note not found");
           const created = await prisma.todo.create({ data: { noteId, text }, select: { id: true } });
+          revalidatePath("/home");
           return { id: created.id };
         },
       }),
@@ -66,6 +90,7 @@ export async function POST(req: Request) {
           const todo = await prisma.todo.findUnique({ where: { id: todoId }, select: { note: { select: { ownerId: true } } } });
           if (!todo || todo.note.ownerId !== userId) throw new Error("Todo not found");
           await prisma.todo.update({ where: { id: todoId }, data: { text } });
+          revalidatePath("/home");
           return { ok: true };
         },
       }),
@@ -76,6 +101,7 @@ export async function POST(req: Request) {
           const todo = await prisma.todo.findUnique({ where: { id: todoId }, select: { note: { select: { ownerId: true } } } });
           if (!todo || todo.note.ownerId !== userId) throw new Error("Todo not found");
           await prisma.todo.update({ where: { id: todoId }, data: { completed } });
+          revalidatePath("/home");
           return { ok: true };
         },
       }),
@@ -86,6 +112,29 @@ export async function POST(req: Request) {
           const todo = await prisma.todo.findUnique({ where: { id: todoId }, select: { note: { select: { ownerId: true } } } });
           if (!todo || todo.note.ownerId !== userId) throw new Error("Todo not found");
           await prisma.todo.delete({ where: { id: todoId } });
+          revalidatePath("/home");
+          return { ok: true };
+        },
+      }),
+      delete_note: tool({
+        description: "Delete a note by id or title",
+        inputSchema: z
+          .object({ noteId: z.string().optional(), title: z.string().optional() })
+          .refine((d) => !!d.noteId || !!d.title, {
+            message: "Provide noteId or title",
+          }),
+        execute: async ({ noteId, title }) => {
+          let id = noteId;
+          if (!id && title) {
+            const found = await prisma.note.findFirst({
+              where: { ownerId: userId!, title },
+              select: { id: true },
+            });
+            if (!found) throw new Error("Note not found");
+            id = found.id;
+          }
+          await prisma.note.delete({ where: { id: id! } });
+          revalidatePath("/home");
           return { ok: true };
         },
       }),
