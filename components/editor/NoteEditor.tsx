@@ -44,6 +44,9 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
       if (b.type === 'todo') next[index] = { ...b, text }
       if (b.type === 'bullet') next[index] = { ...b, text }
       if (b.type === 'numbered') next[index] = { ...b, text }
+      if ((b as any).type === 'quote') next[index] = { ...(b as any), text } as any
+      if ((b as any).type === 'embed') next[index] = { ...(b as any), text } as any
+      if ((b as any).type === 'divider') return prev
       return next
     })
   }, [])
@@ -88,6 +91,9 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
         case 'todo': nb = { type: 'todo', checked: false, text }; break
         case 'bullet': nb = { type: 'bullet', text }; break
         case 'numbered': nb = { type: 'numbered', index: 1, text }; break
+        case 'quote': nb = { type: 'quote' as any, text } as any; break
+        case 'embed': nb = { type: 'embed' as any, text } as any; break
+        case 'divider': nb = { type: 'divider' } as any; break
         default: nb = { type: 'paragraph', text }
       }
       const next = prev.slice()
@@ -138,6 +144,11 @@ function parseBlocksFromMarkdown(markdown: unknown): BlockType[] {
     if (h) {
       blocks.push({ type: 'heading', level: h[1].length, text: h[2] })
       numberIndex = 1
+      continue
+    }
+    const quote = line.match(/^>\s?(.*)$/)
+    if (quote) {
+      blocks.push({ type: 'quote' as any, text: quote[1] })
       continue
     }
     const todo = line.match(/^[-*]\s+\[( |x|X)\]\s+(.*)$/)
@@ -203,7 +214,10 @@ function blocksToMarkdown(blocks: BlockType[]): string {
     else if (b.type === 'todo') out.push(`- [${b.checked ? 'x' : ' '}] ${b.text}`)
     else if (b.type === 'bullet') out.push(`- ${b.text}`)
     else if (b.type === 'numbered') out.push(`${b.index}. ${b.text}`)
-    else out.push(b.text)
+    else if ((b as any).type === 'quote') out.push(`> ${(b as any).text}`)
+    else if ((b as any).type === 'embed') out.push(`${(b as any).text}`)
+    else if ((b as any).type === 'divider') out.push(`---`)
+    else if ('text' in (b as any)) out.push((b as any).text)
   }
   return out.join('\n')
 }

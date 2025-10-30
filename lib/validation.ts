@@ -6,6 +6,9 @@ export const Block = z.union([
   z.object({ type: z.literal("todo"), checked: z.boolean(), text: z.string() }),
   z.object({ type: z.literal("bullet"), text: z.string() }),
   z.object({ type: z.literal("numbered"), index: z.number().int().min(1), text: z.string() }),
+  z.object({ type: z.literal("quote"), text: z.string() }),
+  z.object({ type: z.literal("embed"), text: z.string() }),
+  z.object({ type: z.literal("divider") }),
   z.object({ type: z.literal("paragraph"), text: z.string() }),
 ]);
 
