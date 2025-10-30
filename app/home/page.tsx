@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import NoteCard from "@/components/layout/NoteCard";
+import NewNoteCard from "@/components/layout/NewNoteCard";
 
 export default async function HomePage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -23,25 +25,19 @@ export default async function HomePage() {
         {userId ? (
           <>
             <h2 className="mt-6 text-sm font-medium text-muted-foreground">Recently visited</h2>
+            <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <li>
+                <NewNoteCard />
+              </li>
+              {notes.map((n) => (
+                <li key={n.id}>
+                  <NoteCard id={n.id} title={n.title} updatedAt={n.updatedAt} />
+                </li>
+              ))}
+            </ul>
             {notes.length === 0 ? (
               <p className="mt-3 text-muted-foreground">No recent notes.</p>
-            ) : (
-              <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {notes.map((n) => (
-                  <li key={n.id}>
-                    <Link
-                      href={`/notes/${n.id}`}
-                      className="block rounded-lg border p-4 transition-colors hover:bg-muted/40"
-                    >
-                      <div className="truncate font-medium">{n.title || "Untitled"}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {new Date(n.updatedAt).toLocaleString()}
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+            ) : null}
           </>
         ) : (
           <div className="mt-6 rounded-lg border p-6">

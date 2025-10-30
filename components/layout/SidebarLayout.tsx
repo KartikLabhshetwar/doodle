@@ -13,7 +13,6 @@ import {
   SidebarMenu,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import CreateNoteClient from "@/app/notes/_create-note-client";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -26,6 +25,8 @@ import NoteActionsBar from "@/components/editor/NoteActionsBar";
 import SearchCommand from "@/components/layout/SearchCommand";
 import SidebarNoteItem from "@/components/layout/SidebarNoteItem";
 import IconHouse from "@/components/ui/IconHouse";
+import { createNote } from "@/app/notes/actions";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   title: string;
@@ -81,7 +82,11 @@ export default async function SidebarLayout({ title, children }: Props) {
         </SidebarContent>
         <SidebarFooter>
           <div className="px-2 pb-2">
-            <CreateNoteClient className="w-full" />
+            <form action={createNote}>
+              <button className="w-full rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                New note
+              </button>
+            </form>
           </div>
         </SidebarFooter>
       </Sidebar>
@@ -96,9 +101,11 @@ export default async function SidebarLayout({ title, children }: Props) {
             <DropdownMenu>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem asChild>
-                  <CreateNoteClient className="w-full justify-start" variant="ghost">
-                    New note
-                  </CreateNoteClient>
+                  <form action={createNote}>
+                    <Button type="submit" className="w-full justify-start text-left px-2 py-1 text-sm">
+                      New note
+                    </Button>
+                  </form>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

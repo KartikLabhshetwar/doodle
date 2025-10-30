@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { TrashIcon } from 'lucide-react';
 import IconFiles from "@/components/ui/IconFiles";
+import { toast } from "sonner";
 
 type Props = {
   id: string
@@ -39,7 +40,11 @@ export default function SidebarNoteItem({ id, title }: Props) {
     try {
       setDeleting(true)
       const res = await fetch(`/api/notes/${id}`, { method: "DELETE" })
-      if (!res.ok) throw new Error("Failed to delete note")
+      if (!res.ok) {
+        toast("Failed to delete note")
+        throw new Error("Failed to delete note")
+      }
+      toast("Note deleted")
       // If we're on the deleted note's page, send user to /home
       if (pathname === `/notes/${id}`) {
         router.push("/home")
