@@ -9,8 +9,8 @@ import { Conversation, ConversationContent, ConversationEmptyState } from "@/com
 import { PromptInput, PromptInputProvider, PromptInputBody, PromptInputFooter, PromptInputTextarea, PromptInputSubmit } from "@/components/ai-elements/prompt-input";
 
 export default function AiChatLauncher() {
-  const { messages, appendMessage, status } = useChat();
-    const [open, setOpen] = React.useState(false);
+  const { messages, status, sendMessage } = useChat();
+  const [open, setOpen] = React.useState(false);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -30,24 +30,32 @@ export default function AiChatLauncher() {
                 <ConversationEmptyState description="Ask anything about your notes or add todos." />
               ) : (
                 <div className="space-y-3">
-                  {messages.map((m) => (
-                    <div key={m.id} className="text-sm">
-                      <strong>{m.role === "user" ? "You" : "Assistant"}:</strong> {m.content}
-                    </div>
-                  ))}
+                  {messages.map((m: any) => {
+                    const text = Array.isArray(m.parts)
+                      ? m.parts
+                          .filter((p: any) => p?.type === "text" && typeof p.text === "string")
+                          .map((p: any) => p.text)
+                          .join(" ")
+                      : m.content ?? "";
+                    return (
+                      <div key={m.id} className="text-sm">
+                        <strong>{m.role === "user" ? "You" : "Assistant"}:</strong> {text}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </ConversationContent>
           </Conversation>
           <div className="border-t p-3">
             <PromptInputProvider>
-              <PromptInput onSubmit={(msg) => appendMessage({ role: "user", parts: [{ type: "text", text: msg.text ?? "" }] })}>
+              <PromptInput onSubmit={(msg) => sendMessage({ role: "user", parts: [{ type: "text", text: msg.text ?? "" }] })}>
                 <PromptInputBody>
                   <PromptInputTextarea placeholder="Ask to add a todo, append thoughts, etc." />
                 </PromptInputBody>
                 <PromptInputFooter>
                   <div />
-                  <PromptInputSubmit disabled={status === "streaming"} />
+                  <PromptInputSubmit disabled={status === "streaming" || status === "submitted"} status={status} />
                 </PromptInputFooter>
               </PromptInput>
             </PromptInputProvider>

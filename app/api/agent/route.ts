@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: groq(process.env.GROQ_MODEL_TEXT || "llama-3.1-70b-versatile"),
+    model: groq(process.env.GROQ_MODEL_TEXT || "openai/gpt-oss-20b"),
     system:
       "You are a helpful notes assistant. Prefer using tools for CRUD on notes and todos. Keep responses concise.",
     messages: convertToModelMessages(messages || []),
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toAIStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 
 

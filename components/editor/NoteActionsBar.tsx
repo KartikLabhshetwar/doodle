@@ -42,7 +42,17 @@ export default function NoteActionsBar({ user }: Props) {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => authClient.signOut()}>Sign out</DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={async () => {
+              try {
+                await authClient.signOut();
+              } finally {
+                window.location.assign('/');
+              }
+            }}
+          >
+            Sign out
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

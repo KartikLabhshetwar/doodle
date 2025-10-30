@@ -19,7 +19,7 @@ export function LandingHero({
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await authClient.signIn.social({ provider: "google", callbackURL: "/notes" });
+      await authClient.signIn.social({ provider: "google", callbackURL: "/home" });
     } finally {
       setIsLoading(false);
     }
