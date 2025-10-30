@@ -17,10 +17,12 @@ export default async function NotePage({ params }: Props) {
 
   return (
     <main className="w-full flex-1 p-6">
-      <div className="mb-4">
-        <NoteTitle noteId={note.id} initialTitle={note.title} />
+      <div className="container pl-30 mx-auto">
+        <div className="mb-4 w-full pl-25">
+          <NoteTitle noteId={note.id} initialTitle={note.title} />
+        </div>
+        <NoteContent noteId={note.id} initialContent={note.contentJson as unknown as MarkdownDocType} />
       </div>
-      <NoteContent noteId={note.id} initialContent={note.contentJson as unknown as MarkdownDocType} />
     </main>
   );
 }

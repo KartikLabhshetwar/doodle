@@ -43,7 +43,7 @@ export default function NoteTitle({ noteId, initialTitle }: Props) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Untitled"
-        className="h-10 w-full border-none bg-transparent px-0 text-xl font-semibold focus-visible:ring-0"
+        className="h-16 w-full border-none bg-transparent px-0 text-4xl md:text-5xl font-semibold focus-visible:ring-0 focus-visible:border-transparent shadow-none rounded-none"
       />
       {saving ? <span className="text-xs text-muted-foreground">Saving…</span> : null}
     </div>

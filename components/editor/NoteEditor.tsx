@@ -128,7 +128,7 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
           onFocusIndex={setFocusedIndex}
         />
       </div>
-      <div className="mt-3 text-xs text-muted-foreground">Enter to add • / to change type • ⌫ to remove • Blocks: {blocks.length}</div>
+      <div className="mt-3 pl-25 text-xs text-muted-foreground">Enter to add • / to change type • ⌫ to remove • Blocks: {blocks.length}</div>
     </div>
   )
 }
