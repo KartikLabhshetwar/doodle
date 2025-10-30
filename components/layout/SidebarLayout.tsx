@@ -26,7 +26,10 @@ import SearchCommand from "@/components/layout/SearchCommand";
 import SidebarNoteItem from "@/components/layout/SidebarNoteItem";
 import IconHouse from "@/components/ui/IconHouse";
 import { createNote } from "@/app/notes/actions";
+import AiChatLauncher from "@/components/ai/AiChatLauncher";
+import SidebarTools from "@/components/layout/SidebarTools";
 import { Button } from "@/components/ui/button";
+import IconFeather from "@/components/ui/IconFeather";
 
 type Props = {
   title: string;
@@ -50,7 +53,10 @@ export default async function SidebarLayout({ title, children }: Props) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="px-2 py-2 text-sm font-semibold">Doodle</div>
+          <div className="px-2 py-2 text-sm font-semibold flex items-center gap-2">
+            <IconFeather className="size-4" aria-hidden />
+            Doodle
+          </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu></SidebarMenu>
@@ -81,12 +87,13 @@ export default async function SidebarLayout({ title, children }: Props) {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          <div className="px-2 pb-2">
+          <div className="px-2 pb-2 space-y-2">
             <form action={createNote}>
               <button className="w-full rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
                 New note
               </button>
             </form>
+            <SidebarTools />
           </div>
         </SidebarFooter>
       </Sidebar>
@@ -98,6 +105,7 @@ export default async function SidebarLayout({ title, children }: Props) {
             <div className="text-sm text-muted-foreground">{title}</div>
           </div>
           <div className="flex items-center gap-1">
+            <AiChatLauncher />
             <DropdownMenu>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem asChild>
