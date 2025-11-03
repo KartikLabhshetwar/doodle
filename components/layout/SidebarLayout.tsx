@@ -26,7 +26,6 @@ import SearchCommand from "@/components/layout/SearchCommand";
 import SidebarNoteItem from "@/components/layout/SidebarNoteItem";
 import IconHouse from "@/components/ui/IconHouse";
 import { createNote } from "@/app/notes/actions";
-import AiChatLauncher from "@/components/ai/AiChatLauncher";
 import SidebarTools from "@/components/layout/SidebarTools";
 import { Button } from "@/components/ui/button";
 import IconFeather from "@/components/ui/IconFeather";
@@ -105,7 +104,6 @@ export default async function SidebarLayout({ title, children }: Props) {
             <div className="text-sm text-muted-foreground">{title}</div>
           </div>
           <div className="flex items-center gap-1">
-            <AiChatLauncher />
             <DropdownMenu>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem asChild>

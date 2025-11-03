@@ -13,7 +13,19 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
   const initialMarkdown = React.useMemo(() => {
     const c = initialContent?.content as unknown
     if (typeof c === 'string') return c
-    if (c && typeof c === 'object') return extractPlainText(c as any)
+    if (c && typeof c === 'object') {
+      try {
+        const obj = c as any
+        if (typeof obj.text === 'string') return obj.text
+        if (Array.isArray(obj.content)) {
+          return obj.content
+            .map((item: any) => item?.text || '')
+            .filter(Boolean)
+            .join('\n')
+        }
+      } catch {
+      }
+    }
     return ''
   }, [initialContent])
   const [blocks, setBlocks] = React.useState<BlockType[]>(() => {
@@ -24,11 +36,67 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null)
   // Preview pane removed; content is always converted to Markdown and emitted via onChange
 
+  // Update blocks when initialContent changes (for external updates like AI modifications)
+  const contentRef = React.useRef<string>('')
+  const isExternalUpdateRef = React.useRef(false)
+  const lastOnChangeMarkdownRef = React.useRef<string>('')
+  const blocksRef = React.useRef<BlockType[]>(blocks)
+  
+  React.useEffect(() => {
+    blocksRef.current = blocks
+  }, [blocks])
+    
+  const contentString = typeof initialContent?.content === 'string' 
+    ? initialContent.content 
+    : ''
+  
+  React.useEffect(() => {
+    if (!contentString) return
+
+    // Skip if content hasn't changed
+    if (contentString === contentRef.current) return
+    
+    // Update ref immediately to prevent duplicate processing
+    contentRef.current = contentString
+    
+    // Get current markdown from blocks using ref (no dependency on blocks)
+    const currentMarkdown = blocksToMarkdown(blocksRef.current)
+    
+    // Only update if incoming content differs from current blocks
+    if (contentString !== currentMarkdown) {
+      const newBlocks = parseBlocksFromMarkdown(contentString)
+      if (newBlocks.length > 0) {
+        // Mark as external update to prevent triggering onChange
+        isExternalUpdateRef.current = true
+        setBlocks(newBlocks)
+        lastOnChangeMarkdownRef.current = contentString
+        // Reset flag after React processes the state update
+        requestAnimationFrame(() => {
+          isExternalUpdateRef.current = false
+        })
+      }
+    } else {
+      // Content matches current blocks, just sync the last onChange ref
+      lastOnChangeMarkdownRef.current = contentString
+    }
+  }, [contentString]) // Only depend on content string
+
   const notifyRef = React.useRef<number | undefined>(undefined)
   React.useEffect(() => {
+    // Don't trigger onChange if this update came from external source (AI, etc.)
+    if (isExternalUpdateRef.current) {
+      return
+    }
+    
+    const md = blocksToMarkdown(blocks)
+    // Only trigger onChange if markdown actually changed from what we last sent
+    if (md === lastOnChangeMarkdownRef.current) {
+      return
+    }
+    
     window.clearTimeout(notifyRef.current)
     notifyRef.current = window.setTimeout(() => {
-      const md = blocksToMarkdown(blocks)
+      lastOnChangeMarkdownRef.current = md
       onChange?.({ type: 'markdown', content: md, blocks })
     }, 1200)
     return () => window.clearTimeout(notifyRef.current)
@@ -128,7 +196,9 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
           onFocusIndex={setFocusedIndex}
         />
       </div>
-      <div className="mt-3 pl-25 text-xs text-muted-foreground">Enter to add • / to change type • ⌫ to remove • Blocks: {blocks.length}</div>
+      <div className="mt-3 pl-25 text-xs text-muted-foreground">
+        Press <kbd className="px-1 py-0.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Space</kbd> initially to use AI • Enter to add • / to change type • ⌫ to remove • Blocks: {blocks.length}
+      </div>
     </div>
   )
 }
@@ -173,23 +243,6 @@ function parseBlocksFromMarkdown(markdown: unknown): BlockType[] {
 }
 
 //
-
-// Best-effort extraction of plain text from a TipTap-like doc
-function extractPlainText(doc: any): string {
-  try {
-    const out: string[] = []
-    const visit = (node: any) => {
-      if (!node || typeof node !== 'object') return
-      if (typeof node.text === 'string') out.push(node.text)
-      const content = Array.isArray(node) ? node : node.content
-      if (Array.isArray(content)) for (const c of content) visit(c)
-    }
-    visit(doc)
-    return out.join('\n').trim()
-  } catch {
-    return ''
-  }
-}
 
 // BlockList moved to a separate reusable component
 

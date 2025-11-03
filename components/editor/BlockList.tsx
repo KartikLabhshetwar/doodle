@@ -489,7 +489,7 @@ function placeholderFor(b: BlockType): string {
   if (b.type === 'numbered') return 'List item'
   if ((b as any).type === 'quote') return 'Quote'
   if ((b as any).type === 'embed') return 'Paste URL to embed'
-  return 'Type "/" for commands...'
+  return 'Press Space initially to use AI • Type "/" for commands...'
 }
 
 function styleFor(b: BlockType): React.CSSProperties {
