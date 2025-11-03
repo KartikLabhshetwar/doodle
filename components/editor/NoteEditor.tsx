@@ -63,7 +63,8 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
     const currentMarkdown = blocksToMarkdown(blocksRef.current)
     
     // Only update if incoming content differs from current blocks
-    if (contentString !== currentMarkdown) {
+    // Use trim to handle whitespace differences
+    if (contentString.trim() !== currentMarkdown.trim()) {
       const newBlocks = parseBlocksFromMarkdown(contentString)
       if (newBlocks.length > 0) {
         // Mark as external update to prevent triggering onChange
@@ -71,9 +72,10 @@ export default function NoteEditor({ initialContent, onChange }: Props) {
         setBlocks(newBlocks)
         lastOnChangeMarkdownRef.current = contentString
         // Reset flag after React processes the state update
-        requestAnimationFrame(() => {
+        // Use setTimeout instead of requestAnimationFrame for more reliable timing
+        setTimeout(() => {
           isExternalUpdateRef.current = false
-        })
+        }, 0)
       }
     } else {
       // Content matches current blocks, just sync the last onChange ref

@@ -76,6 +76,8 @@ export default function FloatingAiChat({
   const pendingMessageRef = React.useRef<string | null>(null);
   // Track which tool executions have already triggered a refresh
   const processedToolIds = React.useRef<Set<string>>(new Set());
+  // Track previous status to detect when streaming completes
+  const prevStatusRef = React.useRef(status);
   
   // Track new messages and store original user messages
   React.useEffect(() => {
@@ -114,44 +116,97 @@ export default function FloatingAiChat({
           ? message.parts.filter(
               (p: any) =>
                 typeof p?.type === "string" &&
-                p.type.startsWith("tool-") &&
-                (p.state === "result" || p.state === "complete")
+                p.type.startsWith("tool-")
             )
           : [];
         
         // Process each tool part that hasn't been seen before
         toolParts.forEach((toolPart: any) => {
-          const toolId = `${message.id}-${toolPart.toolName}-${toolPart.toolCallId || Date.now()}`;
-          if (!processedToolIds.current.has(toolId)) {
+          const toolCallId = toolPart.toolCallId || toolPart.id || '';
+          const toolId = `${message.id}-${toolPart.toolName}-${toolCallId}`;
+          
+          // Check if this is a note-modifying tool
+          const noteModifyingTools = [
+            'append_text', 
+            'insert_text', 
+            'replace_text', 
+            'add_todo_to_note', 
+            'add_multiple_todos',
+            'update_note_content',
+            'update_note_title',
+            'delete_text_from_note'
+          ];
+          
+          const isNoteModifying = noteModifyingTools.includes(toolPart.toolName);
+          
+          if (!isNoteModifying) return;
+          
+          // Check if tool has completed - be very thorough in checking
+          // "output-available" is the key state that indicates tool completion in ai-sdk
+          const hasOutput = toolPart.output !== undefined && toolPart.output !== null;
+          const hasResult = toolPart.result !== undefined && toolPart.result !== null;
+          const hasOkResult = hasOutput && typeof toolPart.output === 'object' && toolPart.output.ok === true;
+          const isCompletedState = 
+            toolPart.state === "output-available" ||
+            toolPart.state === "result" || 
+            toolPart.state === "complete" ||
+            toolPart.state === "done";
+          
+          const isCompleted = isCompletedState || hasOutput || hasResult || hasOkResult;
+          
+          // Only process if it's a note-modifying tool and has completed and hasn't been processed
+          if (isCompleted && !processedToolIds.current.has(toolId)) {
             processedToolIds.current.add(toolId);
             
-            // Check if this is a note-modifying tool
-            const noteModifyingTools = [
-              'append_text', 
-              'insert_text', 
-              'replace_text', 
-              'add_todo_to_note', 
-              'add_multiple_todos',
-              'update_note_content',
-              'update_note_title',
-              'delete_text_from_note',
-              'get_note'
-            ];
-            if (noteModifyingTools.includes(toolPart.toolName)) {
-              setTimeout(async () => {
+            // Immediately refetch the note data
+            const refetchNote = async () => {
+              try {
+                // Cancel any ongoing queries first
                 await queryClient.cancelQueries({ queryKey: ['note', noteId] });
+                
+                // Refetch the note data
                 await queryClient.refetchQueries({ 
                   queryKey: ['note', noteId],
                   type: 'active'
                 });
+                
+                // Call the update callback
                 onNoteUpdate?.();
-              }, 1000);
-            }
+              } catch (error) {
+                console.error('Error refetching note after tool completion:', error);
+              }
+            };
+            
+            // Refetch immediately, and also retry with increasing delays to ensure DB is updated
+            refetchNote();
+            setTimeout(refetchNote, 300);
+            setTimeout(refetchNote, 800);
           }
         });
       }
     });
   }, [messages, noteId, queryClient, onNoteUpdate]);
+
+  // Also watch status changes - when streaming completes, check for any unprocessed tools
+  React.useEffect(() => {
+    if (!noteId) return;
+    
+    // If status changed from streaming to something else (not streaming anymore), trigger a check
+    // This catches cases where tool detection might have missed something
+    if (prevStatusRef.current === "streaming" && status !== "streaming") {
+      // Small delay to ensure messages array has updated
+      setTimeout(() => {
+        // Force a refetch to catch any tools that might have completed
+        queryClient.refetchQueries({ 
+          queryKey: ['note', noteId],
+          type: 'active'
+        }).catch(err => console.error('Error refetching on status change:', err));
+        onNoteUpdate?.();
+      }, 300);
+    }
+    
+    prevStatusRef.current = status;
+  }, [status, noteId, queryClient, onNoteUpdate]);
 
   const getGroqKey = React.useCallback(() => {
     return typeof window !== "undefined"

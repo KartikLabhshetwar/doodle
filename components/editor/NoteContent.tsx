@@ -60,12 +60,20 @@ export default function NoteContent({ noteId, initialContent }: Props) {
 
   const currentContent = React.useMemo(() => {
     if (noteData?.contentJson) {
-      return { ...noteData.contentJson }
+      // Create a new object to ensure reference change triggers update
+      const contentJson = noteData.contentJson as MarkdownDocType
+      return { 
+        type: contentJson.type || 'markdown',
+        content: contentJson.content || '',
+        blocks: contentJson.blocks
+      }
     }
     return initialContent
   }, [
     // Depend on the content string to detect actual content changes
-    typeof noteData?.contentJson?.content === 'string' ? noteData.contentJson.content : '',
+    typeof noteData?.contentJson === 'object' && noteData.contentJson !== null 
+      ? JSON.stringify(noteData.contentJson)
+      : '',
     typeof initialContent?.content === 'string' ? initialContent.content : ''
   ])
 
@@ -116,8 +124,13 @@ export default function NoteContent({ noteId, initialContent }: Props) {
             onOpenChange={setAiChatOpen}
             noteId={noteId}
             noteContent={noteContent}
-            onNoteUpdate={() => {
-              queryClient.invalidateQueries({ queryKey: ['note', noteId] })
+            onNoteUpdate={async () => {
+              // Invalidate and refetch to ensure we get the latest data
+              await queryClient.invalidateQueries({ queryKey: ['note', noteId] })
+              await queryClient.refetchQueries({ 
+                queryKey: ['note', noteId],
+                type: 'active'
+              })
             }}
           />
         </>
