@@ -393,23 +393,6 @@ IMPORTANT:
           return { ok: true };
         },
       }),
-      list_todos: tool({
-        description: "List todos for a note",
-        inputSchema: z.object({ 
-          noteId: z.string()
-        }),
-        execute: async ({ noteId }) => {
-          const note = await prisma.note.findFirst({ where: { id: noteId, ownerId: userId! } });
-          if (!note) throw new Error("Note not found");
-          
-          const todos = await prisma.todo.findMany({
-            where: { noteId },
-            select: { id: true, text: true, completed: true },
-            orderBy: { createdAt: "asc" },
-          });
-          return todos;
-        },
-      }),
     },
   });
 
